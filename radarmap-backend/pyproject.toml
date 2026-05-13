@@ -1,0 +1,42 @@
+[project]
+name = "radarmap-backend"
+version = "0.1.0"
+description = "High-performance tile server for RADVOR radar data"
+authors = [
+    { name = "Andreas", email = "andreas@example.com" }
+]
+dependencies = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.22.0",
+    "requests>=2.31.0",
+    "numpy>=1.24.0",
+    "pillow>=10.0.0",
+    "pyproj>=3.6.0",
+    "python-dotenv>=1.0.0",
+    "diskcache>=5.6.0",
+    "pydantic-settings>=2.0.0",
+]
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "httpx>=0.24.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.3",
+]
