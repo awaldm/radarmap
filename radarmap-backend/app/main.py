@@ -1,8 +1,8 @@
 """
 The Radarmap backend main entry point.
-
 """
 import io
+import time
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,23 +14,6 @@ from app.tiles import get_tile_bounds, render_tile
 from app.config import settings
 from app.services.dwd_service import dwd_service
 from app.schemas.models import MaxValueResponse
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Any startup logic if needed
-    yield
-    # Any cleanup logic if needed
-
-app = FastAPI(lifespan=lifespan, title="Radarmap API")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.ALLOWED_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 from app.logger import setup_logging, logger
 
 # Initialize structured logging

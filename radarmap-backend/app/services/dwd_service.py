@@ -6,6 +6,7 @@ import requests
 import gzip
 import os
 import datetime
+import time
 from typing import List, Dict, Tuple, Optional
 from fastapi import HTTPException
 import numpy as np
