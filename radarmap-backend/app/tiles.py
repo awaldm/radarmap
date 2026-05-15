@@ -8,7 +8,6 @@ from PIL import Image
 import numpy as np
 import math
 from pyproj import Proj, Transformer
-from app import georef
 
 # Re-usable transformer to avoid overhead
 transformer_wgs84_to_radolan = Transformer.from_crs(
@@ -78,14 +77,33 @@ RQ_COLORMAP = get_rq_colormap()
 
 def render_tile(data, tile_bounds, product="RQ", flags=None):
     """
-    Render the tiles. 
-    """
+    Performs inverse projection to map a 256x256 Web Mercator tile to the 900x900 RADOLAN grid.
 
-    # Unpack the tile bounds
+    The "Magic" of Zoom Levels:
+    - At Low Zoom (e.g., Z=6): A 256px tile covers half of Germany. One pixel on your screen
+      represents ~5km. The math will "jump" through the radar grid, sampling every 5th cell.
+    - At High Zoom (e.g., Z=12): A 256px tile covers a small town (~10km). One pixel on your screen
+      represents ~40 meters. Since radar resolution is 1000m, about 25 pixels in a row will
+      all map to the SAME radar cell, creating the "blocky" look.
+
+    Step-by-Step:
+    1. Create a 256x256 grid of pixel coordinates (px, py).
+    2. Interpolate px/py to the Lon/Lat bounds of the tile.
+    3. Project Lon/Lat to RADOLAN meters (x_rad, y_rad).
+    4. Convert meters to grid indices (i, j) using the DWD origin (-523km, -4658km).
+    5. Mask indices outside the 900x900 grid.
+    6. Lookup values and apply RGBA colormap.
+
+    Args:
+        data (np.ndarray): 900x900 float array of radar values.
+        tile_bounds (tuple): (lon_min, lat_min, lon_max, lat_max).
+        product (str): "RQ" (intensity) or "RE" (type).
+        flags (np.ndarray): Optional hail/quality flags for RE product.
+    """
     lon_min, lat_min, lon_max, lat_max = tile_bounds
     
     # Create a grid of pixel coordinates in the tile. We default to 256x256
-    # TODO: this is probably the expensive part, and render_tile is called on every single request. Should investigate
+    # TODO: this is probably the expensive part, and render_tile is called on every single request. Should investigate and reuse.
     px, py = np.meshgrid(np.arange(256), np.arange(256))
     
     # Map pixel coordinates to lon/lat
