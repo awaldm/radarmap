@@ -19,6 +19,7 @@ from app.logger import setup_logging, logger
 # Initialize structured logging
 setup_logging()
 
+# Neat way to handle do stuff at startup and after shutdown
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("backend_startup", status="ok")
@@ -27,6 +28,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan, title="Radarmap API")
 
+# For some frontend testing. This avoids different origin errors when accessing the backend API
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.ALLOWED_ORIGINS,
@@ -40,7 +42,7 @@ def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|rq|re)$")
     return dwd_service.get_available_timestamps(product)
 
 @app.get("/api/tiles/{z}/{x}/{y}.png")
-def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ"):
+def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ", size: int = 256):
     start_time = time.perf_counter()
     
     # Get entire frame
@@ -50,7 +52,7 @@ def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ
     try:
         render_start = time.perf_counter()
         tile_bounds = get_tile_bounds(z, x, y)
-        tile_image = render_tile(data, tile_bounds, product=product.upper(), flags=flags)
+        tile_image = render_tile(data, tile_bounds, product=product.upper(), flags=flags, size=size)
         render_time = time.perf_counter() - render_start
         
         buf = io.BytesIO()
@@ -61,6 +63,7 @@ def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ
         logger.info(
             "tile_requested",
             z=z, x=x, y=y,
+            size=size,
             product=product.upper(),
             duration_total=round(total_time, 4),
             duration_data=round(data_time, 4),
