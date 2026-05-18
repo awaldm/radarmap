@@ -13,8 +13,9 @@ import numpy as np
 import diskcache
 from app.parser import parse_radolan_composite
 from app.config import settings
+from app.logger import get_logger
 
-from app.logger import logger
+logger = get_logger()
 
 class DWDService:
     """
@@ -79,19 +80,17 @@ class DWDService:
             download_start = time.perf_counter()
             response = requests.get(file_url, timeout=15)
             response.raise_for_status()
-            download_time = time.perf_counter() - download_start
             
             parse_start = time.perf_counter()
             metadata, values, flags = parse_radolan_composite(response.content)
-            parse_time = time.perf_counter() - parse_start
+            
+            total_time = time.perf_counter() - start_time
             
             self.cache.set(cache_key, {"values": values, "flags": flags}, expire=self.ttl)
             logger.info(
                 "data_acquired",
                 filename=target_filename,
-                duration_total=round(time.perf_counter() - start_time, 4),
-                duration_download=round(download_time, 4),
-                duration_parse=round(parse_time, 4)
+                duration_total=round(total_time, 4)
             )
             return values, flags
         except Exception as e:
