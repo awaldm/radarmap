@@ -72,7 +72,7 @@ def setup_logging():
             prometheus_processor,
             structlog.dev.ConsoleRenderer() # could be JSONRenderer() for file output
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        wrapper_class=structlog.make_filtering_bound_logger(logging.DEBUG),
         context_class=dict,
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=False,
