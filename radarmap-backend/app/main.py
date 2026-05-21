@@ -48,7 +48,7 @@ def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|rq|re)$")
     return dwd_service.get_available_timestamps(product)
 
 @app.get("/api/tiles/{z}/{x}/{y}.png")
-def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ", size: int = 256):
+def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ", size: int = 256, mode: str = "api"):
     ACTIVE_REQUESTS.inc()
     start_time = time.perf_counter()
     
@@ -67,6 +67,7 @@ def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ
             "tile_requested",
             z=z, x=x, y=y, size=size,
             product=product.upper(),
+            mode=mode,
             duration_total=round(time.perf_counter() - start_time, 4),
             duration_render=round(render_time, 4)
         )
