@@ -47,30 +47,37 @@ def metrics():
 def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|rq|re)$")):
     return dwd_service.get_available_timestamps(product)
 
+from app.services.render_service import get_provider
+
 @app.get("/api/tiles/{z}/{x}/{y}.png")
-def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ", size: int = 256, mode: str = "api"):
+def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ", size: int = 256, mode: str = "api", renderer: str = "numpy"):
     ACTIVE_REQUESTS.inc()
     start_time = time.perf_counter()
-    
+
     try:
         # Business Logic: Get data
         data, flags = dwd_service.get_radvor_data(timestamp, product)
-        
-        # Business Logic: Render
+
+        # Business Logic: Render using the selected provider
         render_start = time.perf_counter()
         tile_bounds = get_tile_bounds(z, x, y)
-        tile_image = render_tile(data, tile_bounds, product=product.upper(), flags=flags, size=size)
+
+        provider = get_provider(renderer)
+        tile_image = provider.render(data, tile_bounds, product=product.upper(), flags=flags, size=size)
+
         render_time = time.perf_counter() - render_start
-        
-        # Observability: Just log it. Prometheus updates happen in the background.
+
+        # Observability
         logger.info(
             "tile_requested",
             z=z, x=x, y=y, size=size,
             product=product.upper(),
             mode=mode,
+            renderer=renderer,
             duration_total=round(time.perf_counter() - start_time, 4),
             duration_render=round(render_time, 4)
         )
+
         
         # Convert to PNG and return
         buf = io.BytesIO()

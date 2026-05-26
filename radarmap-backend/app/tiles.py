@@ -52,6 +52,7 @@ def get_tile_bounds(z, x, y):
 def get_rq_colormap():
     """
     Pre-computes a Look-Up Table (LUT) for RQ product (Precipitation Intensity).
+    This makes colormap building faster and more straightworward.
     
     Returns:
         np.ndarray: (2501, 4) array mapping values (scaled by 10) to RGBA uint8.
