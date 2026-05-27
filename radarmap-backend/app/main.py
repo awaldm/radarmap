@@ -50,38 +50,43 @@ def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|rq|re)$")
 from app.services.render_service import get_provider
 
 @app.get("/api/tiles/{z}/{x}/{y}.png")
-def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ", size: int = 256, mode: str = "api", renderer: str = "numpy"):
+def get_tile_endpoint(z: int, x: int, y: int, timestamp: str, product: str = "RQ", size: int = 256, mode: str = "organic", renderer: str = "numpy", interpolation: str = "nearest"):
     ACTIVE_REQUESTS.inc()
     start_time = time.perf_counter()
 
     try:
-        # Business Logic: Get data
+        # 1. Data Acquisition
+        t_data_start = time.perf_counter()
         data, flags = dwd_service.get_radvor_data(timestamp, product)
+        t_data = time.perf_counter() - t_data_start
 
-        # Business Logic: Render using the selected provider
+        # 2. Rendering
         render_start = time.perf_counter()
         tile_bounds = get_tile_bounds(z, x, y)
-
         provider = get_provider(renderer)
-        tile_image = provider.render(data, tile_bounds, product=product.upper(), flags=flags, size=size)
+        tile_image = provider.render(data, tile_bounds, product=product.upper(), flags=flags, size=size, interpolation=interpolation)
+        t_render = time.perf_counter() - render_start
 
-        render_time = time.perf_counter() - render_start
+        # 3. Serialization (The suspect)
+        t_save_start = time.perf_counter()
+        buf = io.BytesIO()
+        tile_image.save(buf, format='PNG')
+        buf.seek(0)
+        t_save = time.perf_counter() - t_save_start
 
-        # Observability
+        total_time = time.perf_counter() - start_time
         logger.info(
             "tile_requested",
             z=z, x=x, y=y, size=size,
-            product=product.upper(),
-            mode=mode,
-            renderer=renderer,
-            duration_total=round(time.perf_counter() - start_time, 4),
-            duration_render=round(render_time, 4)
+            mode=mode, renderer=renderer,
+            duration_total=round(total_time, 4),
+            duration_data=round(t_data, 4),
+            duration_render=round(t_render, 4),
+            duration_serialize=round(t_save, 4)
         )
 
-        
-        # Convert to PNG and return
-        buf = io.BytesIO()
-        tile_image.save(buf, format='PNG')
+        return StreamingResponse(buf, media_type="image/png")
+
         buf.seek(0)
         return StreamingResponse(buf, media_type="image/png")
         

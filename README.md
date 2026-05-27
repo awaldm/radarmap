@@ -1,6 +1,7 @@
 # Radarmap
 
-A visualization application for RADVOR radar open data by the German Weather Service (DWD). This is not affiliated with DWD in any way.
+A visualization application for [RADVOR radar open data](https://opendata.dwd.de/weather/radar/radvor/) by the German Weather Service (DWD). This is not affiliated with DWD in any way.
+
 
 ## Overview
 

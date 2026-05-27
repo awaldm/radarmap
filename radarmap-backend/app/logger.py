@@ -27,6 +27,7 @@ def prometheus_processor(logger, method_name, event_dict):
             product=event_dict.get("product", "UNKNOWN"),
             size=str(event_dict.get("size", "256"))
         ).observe(event_dict.get("duration_render", 0))
+        # Note: we are not adding serialization to Prometheus yet to avoid bloating the registry
         
     elif event == "cache_hit":
         CACHE_OPS_TOTAL.labels(
