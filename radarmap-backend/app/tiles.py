@@ -155,6 +155,7 @@ def render_tile(data, tile_bounds, product="RQ", flags=None, size=256, interpola
         b = np.full_like(r, 255)
         a = (150 + 50 * v_clipped).astype(np.uint8)
         colors = np.stack([r, g, b, a], axis=-1)
+        colors[v_clipped <= 0] = [0, 0, 0, 0]
         if flags is not None:
             # We use nearest neighbor for flags even in bilinear mode
             f_idx_i = np.floor(fi[valid_mask]).astype(int)
