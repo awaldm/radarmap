@@ -8,6 +8,7 @@ RENDERERS = {
     "numba": CudaRenderer(),
 }
 
+
 def get_renderer(name: str) -> RenderingProvider:
     """
     Factory to retrieve a specific rendering implementation.
