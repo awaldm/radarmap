@@ -1,0 +1,52 @@
+[project]
+name = "radarmap"
+version = "0.1.0"
+description = "Monorepo for high-performance radar tiling engine"
+requires-python = ">=3.12"
+dependencies = [
+    "h5py>=3.16.0",
+]
+
+[tool.uv]
+managed = true
+package = false
+
+[tool.uv.workspace]
+members = ["radarmap-backend"]
+
+[dependency-groups]
+dev = [
+    "mkdocs-material>=9.5.18",
+    "ruff>=0.14.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = [
+    "analyze_*.py",
+    "debug_*.py",
+    "download_radvor.py",
+    "gputestscript.py",
+    "simple_plot.py",
+    "test_load.py",
+]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "TCH", # flake8-type-checking
+]
+ignore = ["SIM108"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.ruff.lint.isort]
+known-first-party = ["radarmap-backend"]

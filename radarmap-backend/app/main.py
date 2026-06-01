@@ -5,7 +5,6 @@ The Radarmap backend main entry point.
 import io
 import time
 from contextlib import asynccontextmanager
-from typing import List
 
 import numpy as np
 from fastapi import FastAPI, HTTPException, Query, Response
@@ -49,7 +48,7 @@ def metrics():
     return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 
-@app.get("/api/radvor/timestamps", response_model=List[str])
+@app.get("/api/radvor/timestamps", response_model=list[str])
 def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|rq|re)$")):
     return dwd_service.get_available_timestamps(product)
 
