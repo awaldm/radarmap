@@ -6,7 +6,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    DWD_RADVOR_BASE_URL: str = "https://opendata.dwd.de/weather/radar/radvor"
+    DWD_BASE_URL: str = "https://opendata.dwd.de/weather/radar"
     CACHE_DIR: str = "cache"
     DATA_CACHE_TTL: int = 3600  # 1 hour
 
