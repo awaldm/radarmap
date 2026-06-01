@@ -1,6 +1,7 @@
 import numpy as np
 import pytest
-from app.tiles import get_tile_bounds, render_tile
+from app.tiles import get_tile_bounds
+from app.renderers import get_renderer
 from PIL import Image
 
 
@@ -11,7 +12,7 @@ def test_get_tile_bounds():
     assert bounds == pytest.approx(expected, abs=1e-6)
 
 
-def test_render_tile_rq():
+def test_render_tile_rq_numpy():
     data = np.zeros((900, 900), dtype=np.float32)
     # Put some data in the middle of Germany approx
     data[450, 450] = 5.0  # 5 mm/h
@@ -19,7 +20,10 @@ def test_render_tile_rq():
     # Center tile for zoom 6 (approx Germany)
     # z/x/y = 6/33/21
     bounds = get_tile_bounds(6, 33, 21)
-    tile = render_tile(data, bounds, product="RQ")
+    
+    # Use explicit numpy renderer for CI compatibility
+    engine = get_renderer("numpy")
+    tile = engine.render(data, bounds, product="RQ", flags=None, size=256, interpolation="nearest")
 
     assert isinstance(tile, Image.Image)
     assert tile.size == (256, 256)
@@ -30,12 +34,14 @@ def test_render_tile_rq():
     assert np.any(pixels[:, :, 3] > 0)
 
 
-def test_render_tile_re_hail():
+def test_render_tile_re_hail_numpy():
     data = np.ones((900, 900), dtype=np.float32)  # All 1.0 (Solid)
     flags = np.ones((900, 900), dtype=np.uint16)  # Bit 0 set (Hail)
 
     bounds = get_tile_bounds(6, 33, 21)
-    tile = render_tile(data, bounds, product="RE", flags=flags)
+    
+    engine = get_renderer("numpy")
+    tile = engine.render(data, bounds, product="RE", flags=flags, size=256, interpolation="nearest")
 
     pixels = np.array(tile)
     # Hail color is (255, 0, 255, 200)
