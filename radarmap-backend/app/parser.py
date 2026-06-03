@@ -21,8 +21,8 @@ def parse_radolan_composite(file_content):
     Parses a RADOLAN/RADVOR composite file (Binary or HDF5).
 
     This function automatically detects the format:
-    1. Legacy Binary: Starts with product ID (e.g., RE, RQ) and ends with ETX (0x03).
-    2. Modern HDF5: Used by the new RS/RV products.
+    1. Modern HDF5: Used by the new RS/RV products.
+    2. Legacy Binary: Starts with product ID (e.g., RE, RQ) and ends with ETX (0x03).
 
     Args:
         file_content (bytes): The raw bytes of the radar file (can be gzipped).
@@ -33,18 +33,29 @@ def parse_radolan_composite(file_content):
             - values (np.ndarray): 2D float32 array of precipitation values (mm/h).
             - flags (np.ndarray | None): 2D uint8 array of quality/hail flags (if available).
     """
+    # --- 1. PRIORITY: HDF5 DETECTION ---
+    # We check the raw bytes first, then decompressed bytes.
+    # HDF5 Signature: \x89HDF\r\n\x1a\n
+    if h5py:
+        if file_content.startswith(b"\x89HDF") or file_content.startswith(b"HDF"):
+            return parse_hdf5_composite(file_content)
+
+    # --- 2. DECOMPRESSION ---
     try:
         data = gzip.decompress(file_content)
     except (gzip.BadGzipFile, OSError):
         data = file_content
 
+    # Double check HDF5 after decompression (some servers gzip the HDF5 files)
+    if h5py:
+        if data.startswith(b"\x89HDF") or data.startswith(b"HDF"):
+            return parse_hdf5_composite(data)
+
+    # --- 3. LEGACY BINARY PARSING ---
     header_end_marker = b"\x03"
     header_end_index = data.find(header_end_marker)
     if header_end_index == -1:
-        # Fallback to HDF5 check if binary header not found
-        if h5py and (data.startswith(b"\x89HDF\r\n\x1a\n") or data.startswith(b"HDF")):
-            return parse_hdf5_composite(data)
-        raise ValueError("Header end marker (ETX) not found in data.")
+        raise ValueError("Unknown file format: Header end marker (ETX) not found and not HDF5.")
 
     header_str = data[:header_end_index].decode("latin-1")
     binary_data = data[header_end_index + 1 :]
@@ -71,6 +82,8 @@ def parse_radolan_composite(file_content):
             shape = (1500, 1400)
         elif radolan_data.size == 1200 * 1100:
             shape = (1200, 1100)
+        else:
+            raise ValueError(f"Unknown grid size: {radolan_data.size} items. Expected {shape[0]}x{shape[1]}.")
 
     radolan_data = radolan_data.reshape(shape)
 

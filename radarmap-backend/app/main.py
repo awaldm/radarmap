@@ -49,7 +49,7 @@ def metrics():
 
 
 @app.get("/api/radvor/timestamps", response_model=list[str])
-def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|rq|re)$")):
+def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|RS|rq|re|rs)$")):
     return dwd_service.get_available_timestamps(product)
 
 

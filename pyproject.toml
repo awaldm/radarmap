@@ -18,6 +18,8 @@ members = ["radarmap-backend"]
 dev = [
     "mkdocs-material>=9.5.18",
     "ruff>=0.14.0",
+    "pandas>=2.2.0",
+    "matplotlib>=3.8.0",
 ]
 
 [tool.ruff]
