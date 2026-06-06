@@ -1,17 +1,28 @@
 from app.renderers.base import RenderingProvider
-from app.renderers.cpu import NumpyRenderer
-from app.renderers.cuda import CudaRenderer
 
-# Registry of available rendering implementations
-RENDERERS = {
-    "numpy": NumpyRenderer(),
-    "numba": CudaRenderer(),
-}
+# Cache for instantiated renderers
+_RENDERER_CACHE = {}
 
 
 def get_renderer(name: str) -> RenderingProvider:
     """
     Factory to retrieve a specific rendering implementation.
-    Defaults to 'numpy' if the requested name is unavailable.
+    Lazy-loads the requested renderer to avoid initializing CUDA on CPU-only systems.
     """
-    return RENDERERS.get(name.lower(), RENDERERS["numpy"])
+    name = name.lower()
+
+    if name in _RENDERER_CACHE:
+        return _RENDERER_CACHE[name]
+
+    if name == "numba":
+        from app.renderers.cuda import CudaRenderer
+
+        renderer = CudaRenderer()
+    else:
+        # Default to numpy
+        from app.renderers.cpu import NumpyRenderer
+
+        renderer = NumpyRenderer()
+
+    _RENDERER_CACHE[name] = renderer
+    return renderer
