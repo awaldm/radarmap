@@ -130,14 +130,14 @@ class CudaRenderer(RenderingProvider):
         # Prepare radar and flags data
         rows, cols = data.shape
         data_gpu = cuda.to_device(data.astype(np.float32))
-        
-        # Numba kernels can't handle None for array arguments easily. 
+
+        # Numba kernels can't handle None for array arguments easily.
         # If no flags, pass a tiny dummy array.
         if flags is not None:
             flags_gpu = cuda.to_device(flags)
         else:
             flags_gpu = cuda.to_device(np.zeros((1, 1), dtype=np.uint8))
-            
+
         output_gpu = cuda.device_array((size, size, 4), dtype=np.uint8)
 
         threadsperblock = (16, 16)

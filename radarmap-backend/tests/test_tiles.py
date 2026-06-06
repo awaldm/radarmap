@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
-from app.tiles import get_tile_bounds
 from app.renderers import get_renderer
+from app.tiles import get_tile_bounds
 from PIL import Image
 
 
@@ -20,7 +20,7 @@ def test_render_tile_rq_numpy():
     # Center tile for zoom 6 (approx Germany)
     # z/x/y = 6/33/21
     bounds = get_tile_bounds(6, 33, 21)
-    
+
     # Use explicit numpy renderer for CI compatibility
     engine = get_renderer("numpy")
     tile = engine.render(data, bounds, product="RQ", flags=None, size=256, interpolation="nearest")
@@ -39,7 +39,7 @@ def test_render_tile_re_hail_numpy():
     flags = np.ones((900, 900), dtype=np.uint16)  # Bit 0 set (Hail)
 
     bounds = get_tile_bounds(6, 33, 21)
-    
+
     engine = get_renderer("numpy")
     tile = engine.render(data, bounds, product="RE", flags=flags, size=256, interpolation="nearest")
 

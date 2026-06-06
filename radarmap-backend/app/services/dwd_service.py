@@ -45,7 +45,8 @@ class DWDService:
 
         # Check if timestamp is in cache
         if cached_ts:
-            CACHE_OPS_TOTAL.labels(op="hit", type="timestamps", product=product).inc() # Count in prometheus
+            # Count in prometheus
+            CACHE_OPS_TOTAL.labels(op="hit", type="timestamps", product=product).inc()
             logger.info(
                 "cache_hit",
                 type="timestamps",
@@ -104,7 +105,8 @@ class DWDService:
 
         # If data already in cache -> success!
         if cached_data:
-            CACHE_OPS_TOTAL.labels(op="hit", type="radar_data", product=product).inc() # Count in prometheus
+            # Count in prometheus
+            CACHE_OPS_TOTAL.labels(op="hit", type="radar_data", product=product).inc()
             logger.info(
                 "cache_hit",
                 type="radar_data",
