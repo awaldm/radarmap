@@ -1,0 +1,17 @@
+size,renderer,interpolation,latency_ms
+256,numpy,nearest,12.56
+256,numpy,bilinear,12.89
+512,numpy,nearest,33.71
+512,numpy,bilinear,34.55
+1024,numpy,nearest,113.0
+1024,numpy,bilinear,123.96
+2048,numpy,nearest,436.22
+2048,numpy,bilinear,473.87
+256,numba,nearest,8.74
+256,numba,bilinear,8.32
+512,numba,nearest,12.44
+512,numba,bilinear,13.83
+1024,numba,nearest,27.73
+1024,numba,bilinear,27.51
+2048,numba,nearest,81.69
+2048,numba,bilinear,81.69

@@ -12,7 +12,11 @@ This is not production software in any way. This is mostly a playground for me t
 ## Project Structure
 
 - `radarmap-backend/`: FastAPI server responsible for data parsing, georeferencing, and tile rendering. 
-- `radarmap-frontend/`: React application providing the map interface and timeline visualization. Currently still porting that one.
+- `radarmap-frontend/`: React application providing the map interface and timeline visualization.
+
+## Performance & Scaling
+
+Radarmap is built as a benchmarking platform. It features multiple render paths to compare CPU (NumPy) vs. GPU (Numba CUDA) rendering performance.
 
 ## Getting Started
 

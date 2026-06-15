@@ -1,0 +1,53 @@
+site_name: Radarmap
+site_description: Experimental radar tile rendering project
+repo_url: https://github.com/awaldm/radarmap
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - content.code.annotate
+
+nav:
+  - Overview: index.md
+  - Architecture: 
+      - Dual-Path: architecture.md
+      - Structure Diagram: architecture_diagram.md
+  - Rendering Pipeline: rendering.md
+  - Performance: performance.md
+  - Observability & Telemetry: telemetry.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.arithmatex:
+      generic: true
+  - admonition
+  - footnotes
+  - attr_list
+
+extra_javascript:
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
