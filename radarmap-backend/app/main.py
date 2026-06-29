@@ -48,8 +48,13 @@ def metrics():
     return Response(generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 
+@app.get("/api/stats")
+def get_stats():
+    return dwd_service.get_stats()
+
+
 @app.get("/api/radvor/timestamps", response_model=list[str])
-def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|RS|rq|re|rs)$")):
+def get_available_timestamps(product: str = Query("RQ", regex="^(RQ|RE|RS|RV|rq|re|rs|rv)$")):
     return dwd_service.get_available_timestamps(product)
 
 
