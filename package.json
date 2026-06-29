@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix radarmap-frontend run dev",
+    "build": "npm --prefix radarmap-frontend run build",
+    "frontend": "npm --prefix radarmap-frontend run start",
+    "backend": "cd radarmap-backend && uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload"
+  }
+}
