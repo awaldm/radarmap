@@ -10,16 +10,16 @@ This project is an engineering study and benchmark, not a generic map dashboard.
 
 ```mermaid
 graph TD
-    subgraph DWD Open Data
+    subgraph dwd["DWD Open Data"]
         DWD[opendata.dwd.de]
     end
 
-    subgraph Backend (FastAPI + CuPy/NumPy)
+    subgraph backend["Backend (FastAPI + CuPy/NumPy)"]
         Srv[dwd_service] -->|Cache Check| Cache[(diskcache)]
         Srv -->|Cache Miss| DWD
         Parse[parser.py] -->|Decompress & Decode| Srv
         
-        subgraph Tile Renderers
+        subgraph renderers["Tile Renderers"]
             CPU[NumpyRenderer]
             GPU[CudaRenderer]
         end
@@ -28,7 +28,7 @@ graph TD
         Parse --> GPU
     end
 
-    subgraph Frontend (React + Leaflet)
+    subgraph frontend["Frontend (React + Leaflet)"]
         UI[React App] -->|Request Tiles| BackendAPI[FastAPI Tiles Endpoint]
         BackendAPI --> CPU
         BackendAPI --> GPU
