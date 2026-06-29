@@ -1,10 +1,11 @@
-import os
 import time
+from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
 import requests
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
 BASE_URL = "http://127.0.0.1:8000"
 TILE = (5, 16, 11)
 SIZES = [256, 512, 1024, 2048]
@@ -75,12 +76,14 @@ def conduct_sweep():
                 )
 
     # Save data
-    pd.DataFrame(results).to_csv("benchmark_results.csv", index=False)
+    results_path = REPO_ROOT / "benchmarks" / "benchmark_results.csv"
+    pd.DataFrame(results).to_csv(results_path, index=False)
     return pd.DataFrame(results)
 
 
 def plot_results(df):
-    os.makedirs("docs/images", exist_ok=True)
+    image_dir = REPO_ROOT / "docs" / "images"
+    image_dir.mkdir(parents=True, exist_ok=True)
 
     # 1. LATENCY SCALING
     plt.figure(figsize=(10, 6))
@@ -96,7 +99,7 @@ def plot_results(df):
     plt.yscale("log")
     plt.grid(True, which="both", ls="-", alpha=0.3)
     plt.legend()
-    plt.savefig("docs/images/bench_latency_scaling.png")
+    plt.savefig(image_dir / "bench_latency_scaling.png")
 
     # 2. SPEEDUP FACTOR (Nearest)
     plt.figure(figsize=(10, 6))
@@ -114,7 +117,7 @@ def plot_results(df):
     plt.bar([str(s) for s in SIZES], speedups, color="skyblue")
     plt.title("GPU Speedup Factor (Nearest Neighbor)")
     plt.ylabel("Speedup (x-fold)")
-    plt.savefig("docs/images/bench_gpu_speedup.png")
+    plt.savefig(image_dir / "bench_gpu_speedup.png")
 
     print("\nGraphs updated in docs/images/")
 
