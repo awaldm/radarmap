@@ -1,46 +1,100 @@
 # Radarmap
 
-A visualization application for [RADVOR radar open data](https://opendata.dwd.de/weather/radar/radvor/) by the German Weather Service (DWD). This is not affiliated with DWD in any way.
+Radarmap is an inspectable radar-map pipeline for [German Weather Service (DWD) RADVOR radar open data](https://opendata.dwd.de/weather/radar/radvor/). It parses meteorological grid files, projects them from polar stereographic coordinates to web-map coordinates, renders interactive map tiles, and exposes tile-rendering performance metrics.
 
+This project is an engineering study and benchmark, not a generic map dashboard. The primary goal is comparing CPU and server-side GPU rendering for a high-resolution tile path to examine when GPU transfer overhead is worth paying.
 
+---
 
-Radarmap is designed to provide smooth, low-latency access to precipitation intensity (RQ) and type (RE) radar forecast data. It employs a flexible stack to handle heavy coordinate transformations and tile rendering efficiently. It parses compact meteorological grid files, projects them into web-map coordinates, renders interactive map tiles, and records tile-rendering metrics.
+## 1. System Architecture
 
-This is mainly an engineering study, not a generic map demo. The current version server-side CPU and GPU rendering for high-resolution tiles and documents where the GPU transfer cost is worth paying.
+```mermaid
+graph TD
+    subgraph DWD Open Data
+        DWD[opendata.dwd.de]
+    end
 
+    subgraph Backend (FastAPI + CuPy/NumPy)
+        Srv[dwd_service] -->|Cache Check| Cache[(diskcache)]
+        Srv -->|Cache Miss| DWD
+        Parse[parser.py] -->|Decompress & Decode| Srv
+        
+        subgraph Tile Renderers
+            CPU[NumpyRenderer]
+            GPU[CudaRenderer]
+        end
+        
+        Parse --> CPU
+        Parse --> GPU
+    end
 
+    subgraph Frontend (React + Leaflet)
+        UI[React App] -->|Request Tiles| BackendAPI[FastAPI Tiles Endpoint]
+        BackendAPI --> CPU
+        BackendAPI --> GPU
+        UI -->|Fetch Metrics| Prom[Prometheus Endpoint]
+        UI -->|Telemetry Stats| StatsAPI[FastAPI Stats Endpoint]
+    end
+```
 
-## Overview
+---
 
+## 2. Performance Benchmarks
 
-This is not production software in any way. This is mostly a playground for me to check out tileservers as backends, take them apart and profile them.
+Below is a comparison of tile-rendering latency on a local benchmarking run, comparing the standard Python CPU (`NumPy`) path against the parallelized GPU (`Numba CUDA`) path:
 
-## Project Structure
+| Tile Size (px) | Interpolation | CPU (NumPy) Latency | GPU (Numba CUDA) Latency | Speedup Factor |
+| :--- | :--- | :--- | :--- | :--- |
+| **256** | Nearest | 12.56 ms | 8.74 ms | **1.4x** |
+| **256** | Bilinear | 12.89 ms | 8.32 ms | **1.5x** |
+| **512** | Nearest | 33.71 ms | 12.44 ms | **2.7x** |
+| **512** | Bilinear | 34.55 ms | 13.83 ms | **2.5x** |
+| **1024** | Nearest | 113.00 ms | 27.73 ms | **4.1x** |
+| **1024** | Bilinear | 123.96 ms | 27.51 ms | **4.5x** |
+| **2048** | Nearest | 436.22 ms | 81.69 ms | **5.3x** |
+| **2048** | Bilinear | 473.87 ms | 81.69 ms | **5.8x** |
 
-- `radarmap-backend/`: FastAPI server responsible for data parsing, georeferencing, and tile rendering. 
-- `radarmap-frontend/`: React application providing the map interface and timeline visualization.
+> [!NOTE]  
+> The speedup scales with tile resolution because the overhead of transferring the 900x900 grid memory to the GPU is constant, while the computing parallelization benefits increase quadratically.
 
-## Performance & Scaling
+---
 
-Radarmap is built as a benchmarking platform. It features multiple render paths to compare CPU (NumPy) vs. GPU (Numba CUDA) rendering performance.
+## 3. What This Does
 
-## Status
+I built this to handle several types of radar data, and conduct fast coordinate mapping on CPU and GPU. The backend is instrumented via prometheus and structlog, adding a layer of observability that makes benchmarking a bit easier.
 
-The Numba CUDA implementation reduced render time from about 880 ms to 80 ms. The important question is not the speedup alone, but what it says about the regime where server-side GPU rendering can overcome transfer/setup overhead.
+---
 
+## 5. Getting Started
 
-## Getting Started
+### Prerequisites
 
-### Backend
-1. Ensure you have `uv` installed.
-2. `cd radarmap-backend`
-3. `uv sync`
-4. `uv run uvicorn app.main:app`
+* Python >= 3.10
+* Node.js >= 18
+* `uv` (Fast Python dependency installer)
 
-### Frontend
-1. `cd radarmap-frontend`
-2. `npm install`
-3. `npm run dev`
+### Running Locally
+
+You can launch both services together from the frontend directory:
+
+1. **Setup Backend Dependencies**:
+   ```bash
+   cd radarmap-backend
+   uv sync
+   ```
+2. **Setup Frontend Dependencies**:
+   ```bash
+   cd ../radarmap-frontend
+   npm install
+   ```
+3. **Run Dev Environment**:
+   ```bash
+   npm run dev
+   ```
+   This will simultaneously spin up the frontend on `http://localhost:5173` and the backend on `http://localhost:8000`.
+
+---
 
 ## License
+
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
