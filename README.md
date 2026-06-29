@@ -1,100 +1,144 @@
 # Radarmap
 
-Radarmap is an inspectable radar-map pipeline for [German Weather Service (DWD) RADVOR radar open data](https://opendata.dwd.de/weather/radar/radvor/). It parses meteorological grid files, projects them from polar stereographic coordinates to web-map coordinates, renders interactive map tiles, and exposes tile-rendering performance metrics.
+![Radarmap screenshot](docs/images/radvor_simple.png)
 
-This project is an engineering study and benchmark, not a generic map dashboard. The primary goal is comparing CPU and server-side GPU rendering for a high-resolution tile path to examine when GPU transfer overhead is worth paying.
+Radarmap is an inspectable radar-map pipeline for [German Weather Service (DWD) RADVOR radar open data](https://opendata.dwd.de/weather/radar/radvor/). It fetches radar products, parses them into arrays, renders
+XYZ PNG map tiles, and exposes request timing through structured logs and
+Prometheus metrics.
 
----
+The project is mainly an engineering study and benchmark. Its main purpose is to evaluate server-side CPU and CUDA-based tile rendering and analyze involved overheads.
 
-## 1. System Architecture
+## Features
+
+- Backend: FastAPI tile API with DWD download, local archive reuse, disk cache,
+  RADVOR data parsing, and Prometheus metrics.
+- Frontend: React + Leaflet map using the backend tile endpoint
+- Renderers: portable CPU path using NumPy/PyProj and optional GPU path using
+  Numba CUDA kernels
+- Benchmarks: warmed local HTTP tile benchmark comparing CPU and CUDA renderers
+
+## Architecture
 
 ```mermaid
-graph TD
-    subgraph dwd["DWD Open Data"]
-        DWD[opendata.dwd.de]
-    end
-
-    subgraph backend["Backend (FastAPI + CuPy/NumPy)"]
-        Srv[dwd_service] -->|Cache Check| Cache[(diskcache)]
-        Srv -->|Cache Miss| DWD
-        Parse[parser.py] -->|Decompress & Decode| Srv
-        
-        subgraph renderers["Tile Renderers"]
-            CPU[NumpyRenderer]
-            GPU[CudaRenderer]
-        end
-        
-        Parse --> CPU
-        Parse --> GPU
-    end
-
-    subgraph frontend["Frontend (React + Leaflet)"]
-        UI[React App] -->|Request Tiles| BackendAPI[FastAPI Tiles Endpoint]
-        BackendAPI --> CPU
-        BackendAPI --> GPU
-        UI -->|Fetch Metrics| Prom[Prometheus Endpoint]
-        UI -->|Telemetry Stats| StatsAPI[FastAPI Stats Endpoint]
-    end
+flowchart LR
+    DWD[DWD open data] --> Service[DwdService]
+    Service --> Archive[(local data archive)]
+    Service --> Cache[(diskcache)]
+    Service --> Parser[parser.py]
+    Parser --> Array[Radar array + flags]
+    Array --> CPU[NumPy renderer]
+    Array --> GPU[Numba CUDA renderer]
+    CPU --> Tiles[FastAPI PNG tile endpoint]
+    GPU --> Tiles
+    Tiles --> Frontend[React + Leaflet frontend]
+    Tiles --> Logs[structlog request events]
+    Logs --> Metrics[Prometheus /metrics]
 ```
 
----
+## Repository Layout
 
-## 2. Performance Benchmarks
+| Path | Purpose |
+| :--- | :--- |
+| `radarmap-backend/` | FastAPI backend, parser, renderers, services, tests. |
+| `radarmap-frontend/` | React/Leaflet frontend. |
+| `docs/` | MkDocs documentation and generated images. |
+| `benchmarks/` | CPU/GPU benchmark sweep, GPU transfer helper, and benchmark CSV. |
+| `scripts/` | Utility scripts, including DWD sample download helpers. |
+| `data/` | Local radar archives. Ignored by Git except documentation. |
+| `cache/` | Runtime disk cache. Ignored by Git. |
 
-Below is a comparison of tile-rendering latency on a local benchmarking run, comparing the standard Python CPU (`NumPy`) path against the parallelized GPU (`Numba CUDA`) path:
+## Local Run
 
-| Tile Size (px) | Interpolation | CPU (NumPy) Latency | GPU (Numba CUDA) Latency | Speedup Factor |
-| :--- | :--- | :--- | :--- | :--- |
-| **256** | Nearest | 12.56 ms | 8.74 ms | **1.4x** |
-| **256** | Bilinear | 12.89 ms | 8.32 ms | **1.5x** |
-| **512** | Nearest | 33.71 ms | 12.44 ms | **2.7x** |
-| **512** | Bilinear | 34.55 ms | 13.83 ms | **2.5x** |
-| **1024** | Nearest | 113.00 ms | 27.73 ms | **4.1x** |
-| **1024** | Bilinear | 123.96 ms | 27.51 ms | **4.5x** |
-| **2048** | Nearest | 436.22 ms | 81.69 ms | **5.3x** |
-| **2048** | Bilinear | 473.87 ms | 81.69 ms | **5.8x** |
+Prerequisites:
 
-> [!NOTE]  
-> The speedup scales with tile resolution because the overhead of transferring the 900x900 grid memory to the GPU is constant, while the computing parallelization benefits increase quadratically.
+- Python 3.10 or newer
+- Node.js 18 or newer
+- `uv`
 
----
+Install dependencies:
 
-## 3. What This Does
+```bash
+uv sync
+npm --prefix radarmap-frontend install
+```
 
-I built this to handle several types of radar data, and conduct fast coordinate mapping on CPU and GPU. The backend is instrumented via prometheus and structlog, adding a layer of observability that makes benchmarking a bit easier.
+Run both services together:
 
----
+```bash
+npm run dev
+```
 
-## 5. Getting Started
+Or run them in separate terminals:
 
-### Prerequisites
+```bash
+npm run backend
+npm run frontend
+```
 
-* Python >= 3.10
-* Node.js >= 18
-* `uv` (Fast Python dependency installer)
+The frontend runs at `http://localhost:5173`; the backend runs at
+`http://127.0.0.1:8000`.
 
-### Running Locally
+The backend can download current DWD data on demand. Downloaded archives are
+stored under `data/<product>/` and are intentionally ignored by Git. For a local
+sample archive, use:
 
-You can launch both services together from the frontend directory:
+```bash
+uv run python scripts/download_radvor.py
+```
 
-1. **Setup Backend Dependencies**:
-   ```bash
-   cd radarmap-backend
-   uv sync
-   ```
-2. **Setup Frontend Dependencies**:
-   ```bash
-   cd ../radarmap-frontend
-   npm install
-   ```
-3. **Run Dev Environment**:
-   ```bash
-   npm run dev
-   ```
-   This will simultaneously spin up the frontend on `http://localhost:5173` and the backend on `http://localhost:8000`.
+## Benchmarks
 
----
+`benchmarks/run_benchmarks.py` is the benchmark used for the published CPU/GPU
+latency table. It drives the HTTP tile endpoint, warms each renderer path, and
+writes `benchmarks/benchmark_results.csv` plus charts under `docs/images/`.
+
+Example results on a 2021-vintage laptop:
+
+| Tile size | Interpolation | CPU NumPy | Numba CUDA | Speedup |
+| :--- | :--- | ---: | ---: | ---: |
+| 256px | nearest | 12.56 ms | 8.74 ms | 1.4x |
+| 256px | bilinear | 12.89 ms | 8.32 ms | 1.5x |
+| 512px | nearest | 33.71 ms | 12.44 ms | 2.7x |
+| 512px | bilinear | 34.55 ms | 13.83 ms | 2.5x |
+| 1024px | nearest | 113.00 ms | 27.73 ms | 4.1x |
+| 1024px | bilinear | 123.96 ms | 27.51 ms | 4.5x |
+| 2048px | nearest | 436.22 ms | 81.69 ms | 5.3x |
+| 2048px | bilinear | 473.87 ms | 81.69 ms | 5.8x |
+
+These numbers are local measurements for one selected product/tile shape, i.e. they compare renderer behavior on one set of laptop hardware. 
+
+## Observability
+
+The backend exposes Prometheus metrics at `/metrics` and structured request logs
+through `structlog`.
+
+Currently documented signals include:
+
+- tile request count
+- active request count
+- tile render latency by product and tile size
+- tile render failures
+- data acquisition latency
+- cache hit/miss behavior
+
+See [docs/telemetry.md](docs/telemetry.md) for metric names and interpretation.
+
+## Caveats
+
+- No `docker compose up` path exists yet; the current runnable path is the local
+  backend/frontend dev workflow above
+- The CPU renderer is the portable default; the CUDA renderer is an optional acceleration path for compatible local machines
+- The frontend currently requests default 256px PNG tiles; large tile sizes in the benchmark are stress cases
+
+## Documentation
+
+Detailed notes live in `docs/`:
+
+- [Architecture](docs/architecture.md)
+- [Rendering](docs/rendering.md)
+- [Performance](docs/performance.md)
+- [Telemetry](docs/telemetry.md)
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+MIT. See [LICENSE](LICENSE).

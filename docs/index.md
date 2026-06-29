@@ -11,10 +11,22 @@ The repository contains:
 - a React frontend for map-based visualization
 - CPU and CUDA rendering paths for comparing implementation strategies
 - benchmark and telemetry code for measuring where request time is spent
+- local-data and cache directories that are intentionally kept out of Git
 
 This is not packaged as production software. The codebase is primarily a
 working environment for testing rendering approaches and documenting the
 results.
+
+## Repository Layout
+
+| Path | Purpose |
+| :--- | :--- |
+| `radarmap-backend/` | FastAPI backend, parser, renderers, services, tests. |
+| `radarmap-frontend/` | React/Leaflet frontend. |
+| `benchmarks/` | CPU/GPU benchmark sweep, GPU transfer helper, and benchmark CSV. |
+| `scripts/` | Utility scripts such as DWD sample download helpers. |
+| `data/` | Local DWD archives, ignored by Git except `data/README.md`. |
+| `docs/` | Project documentation and generated images. |
 
 ## Documentation
 

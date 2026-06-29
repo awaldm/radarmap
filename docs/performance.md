@@ -32,8 +32,8 @@ process cold-start latencies.
 
 Source files:
 
-- Benchmark script: `run_benchmarks.py`
-- Latency data: `benchmark_results.csv`
+- Benchmark script: `benchmarks/run_benchmarks.py`
+- Latency data: `benchmarks/benchmark_results.csv`
 
 ## Tile Size
 

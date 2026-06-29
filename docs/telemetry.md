@@ -39,14 +39,10 @@ through `/metrics`.
 | :--- | :--- | :--- | :--- |
 | `radarmap_total_requests_count` | Counter | none | Number of tile requests observed by the logging processor. |
 | `radarmap_tile_render_seconds` | Histogram | `product`, `size` | Render duration from `tile_requested` events. |
+| `radarmap_tile_render_errors_total` | Counter | `product`, `renderer` | Tile render failures from `tile_render_failed` events. |
 | `radarmap_data_acquisition_seconds` | Histogram | `product`, `type` | Time spent acquiring radar data. |
 | `radarmap_cache_ops_total` | Counter | `op`, `type`, `product` | Cache hit/miss accounting. |
 | `radarmap_active_requests` | Gauge | none | Requests currently being processed. |
-
-Implementation note: `radarmap_tile_render_seconds` has a `product` label, but
-the current `tile_requested` log event does not include `product`. Until that
-field is added to the event, the metric uses the default `UNKNOWN` label value
-for product-level render timing.
 
 ## Cardinality Rules
 
